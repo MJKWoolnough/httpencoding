@@ -85,7 +85,7 @@ Loop:
 			weight:   weight,
 		})
 	}
-	sort.Sort(accepts)
+	sort.Stable(accepts)
 	for _, accept := range accepts {
 		switch accept.encoding {
 		case identityEncoding:
