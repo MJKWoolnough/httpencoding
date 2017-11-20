@@ -52,6 +52,8 @@ func InvalidEncoding(w http.ResponseWriter) {
 func HandleEncoding(w http.ResponseWriter, r *http.Request, h Handler) bool {
 	acceptHeader := r.Header.Get(acceptEncoding)
 	accepts := make(encodings, 0, strings.Count(acceptHeader, acceptSplit)+1)
+	allowIdentity := true
+	hasIdentity := false
 Loop:
 	for _, accept := range strings.Split(acceptHeader, acceptSplit) {
 		parts := strings.Split(strings.TrimSpace(accept), partSplit)
@@ -60,32 +62,48 @@ Loop:
 			continue
 		}
 		var (
-			weight float64 = 1
-			err    error
+			qVal float64 = 1
+			err  error
 		)
 		for _, part := range parts[1:] {
 			if strings.HasPrefix(strings.TrimSpace(part), weightPrefix) {
-				weight, err = strconv.ParseFloat(part[len(weightPrefix):], 32)
-				if err != nil || weight < 0 || weight >= 2 { // return an malformed header response?
+				qVal, err = strconv.ParseFloat(part[len(weightPrefix):], 32)
+				if err != nil || qVal < 0 || qVal >= 2 { // return an malformed header response?
 					continue Loop
 				}
 				break
 			}
 		}
+		name = strings.ToLower(name)
+		weight := uint16(qVal * 1000)
+		if name == identityEncoding {
+			allowIdentity = weight != 0
+			hasIdentity = true
+		}
 		accepts = append(accepts, encoding{
-			encoding: strings.ToLower(name),
-			weight:   uint16(weight * 1000),
+			encoding: name,
+			weight:   weight,
 		})
 	}
 	sort.Sort(accepts)
-	allowIdentity := true
 	for _, accept := range accepts {
 		switch accept.encoding {
 		case identityEncoding:
-			allowIdentity = accept.weight != 0
-			break
+			if accept.weight != 0 {
+				if h.Handle(w, r, "") {
+					return true
+				}
+			}
+			allowIdentity = false
 		case anyEncoding:
-			allowIdentity = accept.weight != 0
+			if !hasIdentity {
+				if accept.weight != 0 {
+					if h.Handle(w, r, "") {
+						return true
+					}
+				}
+				allowIdentity = false
+			}
 		default:
 			if h.Handle(w, r, accept.encoding) {
 				return true
@@ -93,8 +111,9 @@ Loop:
 		}
 	}
 	if allowIdentity {
-		h.Handle(w, r, "")
-		return true
+		if h.Handle(w, r, "") {
+			return true
+		}
 	}
 	return false
 }
