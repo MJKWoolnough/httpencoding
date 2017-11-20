@@ -36,20 +36,20 @@ type encoding struct {
 }
 
 type Handler interface {
-	Handle(w http.ResponseWriter, r *http.Request, encoding string) bool
+	Handle(encoding string) bool
 }
 
-type HandlerFunc func(http.ResponseWriter, *http.Request, string) bool
+type HandlerFunc func(string) bool
 
-func (h HandlerFunc) Handle(w http.ResponseWriter, r *http.Request, e string) bool {
-	return h(w, r, e)
+func (h HandlerFunc) Handle(e string) bool {
+	return h(e)
 }
 
 func InvalidEncoding(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNotAcceptable)
 }
 
-func HandleEncoding(w http.ResponseWriter, r *http.Request, h Handler) bool {
+func HandleEncoding(r *http.Request, h Handler) bool {
 	acceptHeader := r.Header.Get(acceptEncoding)
 	accepts := make(encodings, 0, strings.Count(acceptHeader, acceptSplit)+1)
 	allowIdentity := true
@@ -90,7 +90,7 @@ Loop:
 		switch accept.encoding {
 		case identityEncoding:
 			if accept.weight != 0 {
-				if h.Handle(w, r, "") {
+				if h.Handle("") {
 					return true
 				}
 			}
@@ -98,20 +98,20 @@ Loop:
 		case anyEncoding:
 			if !hasIdentity {
 				if accept.weight != 0 {
-					if h.Handle(w, r, "") {
+					if h.Handle("") {
 						return true
 					}
 				}
 				allowIdentity = false
 			}
 		default:
-			if h.Handle(w, r, accept.encoding) {
+			if h.Handle(accept.encoding) {
 				return true
 			}
 		}
 	}
 	if allowIdentity {
-		if h.Handle(w, r, "") {
+		if h.Handle("") {
 			return true
 		}
 	}
