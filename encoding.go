@@ -1,3 +1,5 @@
+// Package httpencoding provides a function to deal with the Accept-Encoding
+// header.
 package httpencoding
 
 import (
@@ -35,20 +37,34 @@ type encoding struct {
 	weight   uint16
 }
 
+// Handler provides an interface to handle an encoding
 type Handler interface {
 	Handle(encoding string) bool
 }
 
+// HandlerFunc wraps a func to make it satisfy the Handler interface
 type HandlerFunc func(string) bool
 
+// Handle calls the underlying func
 func (h HandlerFunc) Handle(e string) bool {
 	return h(e)
 }
 
+// InvalidEncoding writes the 406 header
 func InvalidEncoding(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNotAcceptable)
 }
 
+// HandleEncoding will process the Accept-Encoding header and calls the given
+// handler for each encoding until the handler returns true.
+//
+// This function returns true when the Handler returns true, false otherwise
+//
+// For the identity (plain text) encoding the encoding string will be the
+// empty string.
+//
+// The wildcard encoding (*) is currently treated as identity when there is no
+// independent identity encoding specified; otherwise, it is ignored.
 func HandleEncoding(r *http.Request, h Handler) bool {
 	acceptHeader := r.Header.Get(acceptEncoding)
 	accepts := make(encodings, 0, strings.Count(acceptHeader, acceptSplit)+1)
