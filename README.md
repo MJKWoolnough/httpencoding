@@ -38,7 +38,12 @@ type Handler interface {
 }
 ```
 
-Handler provides an interface to handle an encoding
+Handler provides an interface to handle an encoding.
+
+The encoding string (e.g. gzip, br, deflate) is passed to the handler, which is
+expected to return true if no more encodings are required and false otherwise.
+
+The empty string "" is used to signify the identity encoding, or plain text
 
 #### type HandlerFunc
 
