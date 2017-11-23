@@ -7,6 +7,16 @@ header.
 
 ## Usage
 
+#### func  ClearEncoding
+
+```go
+func ClearEncoding(r *http.Request)
+```
+ClearEncoding removes the Accept-Encoding header so that any further attempts to
+establish an encoding will simply used the default, plain text, encoding.
+
+Useful when you don't want a handler down the chain to also handle encoding
+
 #### func  HandleEncoding
 
 ```go
