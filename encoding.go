@@ -90,7 +90,7 @@ Loop:
 		for _, part := range parts[1:] {
 			if strings.HasPrefix(strings.TrimSpace(part), weightPrefix) {
 				qVal, err = strconv.ParseFloat(part[len(weightPrefix):], 32)
-				if err != nil || qVal < 0 || qVal >= 2 { // return an malformed header response?
+				if err != nil || qVal < 0 || qVal >= 2 {
 					continue Loop
 				}
 				break
@@ -138,4 +138,13 @@ Loop:
 		}
 	}
 	return false
+}
+
+// ClearEncoding removes the Accept-Encoding header so that any further
+// attempts to establish an encoding will simply used the default, plain text,
+// encoding.
+//
+// Useful when you don't want a handler down the chain to also handle encoding
+func ClearEncoding(r *http.Request) {
+	r.Header.Del(acceptEncoding)
 }
