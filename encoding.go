@@ -1,6 +1,6 @@
 // Package httpencoding provides a function to deal with the Accept-Encoding
 // header.
-package httpencoding
+package httpencoding // import "vimagination.zapto.org/httpencoding"
 
 import (
 	"net/http"
