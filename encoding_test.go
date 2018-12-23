@@ -8,8 +8,8 @@ import (
 
 type testEncodings []string
 
-func (t *testEncodings) Handle(encoding string) bool {
-	*t = append(*t, encoding)
+func (t *testEncodings) Handle(encoding Encoding) bool {
+	*t = append(*t, string(encoding))
 	return false
 }
 

@@ -33,9 +33,11 @@ func (e encodings) Swap(i, j int) {
 }
 
 type encoding struct {
-	encoding string
+	encoding Encoding
 	weight   uint16
 }
+
+type Encoding string
 
 // Handler provides an interface to handle an encoding.
 //
@@ -45,7 +47,7 @@ type encoding struct {
 //
 // The empty string "" is used to signify the identity encoding, or plain text
 type Handler interface {
-	Handle(encoding string) bool
+	Handle(encoding Encoding) bool
 }
 
 // HandlerFunc wraps a func to make it satisfy the Handler interface
@@ -103,7 +105,7 @@ Loop:
 			hasIdentity = true
 		}
 		accepts = append(accepts, encoding{
-			encoding: name,
+			encoding: Encoding(name),
 			weight:   weight,
 		})
 	}
