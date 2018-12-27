@@ -51,10 +51,10 @@ type Handler interface {
 }
 
 // HandlerFunc wraps a func to make it satisfy the Handler interface
-type HandlerFunc func(string) bool
+type HandlerFunc func(Encoding) bool
 
 // Handle calls the underlying func
-func (h HandlerFunc) Handle(e string) bool {
+func (h HandlerFunc) Handle(e Encoding) bool {
 	return h(e)
 }
 
