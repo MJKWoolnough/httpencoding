@@ -37,6 +37,8 @@ type encoding struct {
 	weight   uint16
 }
 
+// Encoding represents an encoding string as used by the client. Examples are
+// gzip, br and deflate.
 type Encoding string
 
 // Handler provides an interface to handle an encoding.
