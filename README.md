@@ -1,6 +1,6 @@
 # httpencoding
 --
-    import "github.com/MJKWoolnough/httpencoding"
+    import "vimagination.zapto.org/httpencoding"
 
 Package httpencoding provides a function to deal with the Accept-Encoding
 header.
@@ -40,11 +40,20 @@ func InvalidEncoding(w http.ResponseWriter)
 ```
 InvalidEncoding writes the 406 header
 
+#### type Encoding
+
+```go
+type Encoding string
+```
+
+Encoding represents an encoding string as used by the client. Examples are gzip,
+br and deflate.
+
 #### type Handler
 
 ```go
 type Handler interface {
-	Handle(encoding string) bool
+	Handle(encoding Encoding) bool
 }
 ```
 
@@ -58,7 +67,7 @@ The empty string "" is used to signify the identity encoding, or plain text
 #### type HandlerFunc
 
 ```go
-type HandlerFunc func(string) bool
+type HandlerFunc func(Encoding) bool
 ```
 
 HandlerFunc wraps a func to make it satisfy the Handler interface
@@ -66,6 +75,6 @@ HandlerFunc wraps a func to make it satisfy the Handler interface
 #### func (HandlerFunc) Handle
 
 ```go
-func (h HandlerFunc) Handle(e string) bool
+func (h HandlerFunc) Handle(e Encoding) bool
 ```
 Handle calls the underlying func
