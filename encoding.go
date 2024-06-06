@@ -47,20 +47,20 @@ type Encoding string
 // is expected to return true if no more encodings are required and false
 // otherwise.
 //
-// The empty string "" is used to signify the identity encoding, or plain text
+// The empty string "" is used to signify the identity encoding, or plain text.
 type Handler interface {
 	Handle(encoding Encoding) bool
 }
 
-// HandlerFunc wraps a func to make it satisfy the Handler interface
+// HandlerFunc wraps a func to make it satisfy the Handler interface.
 type HandlerFunc func(Encoding) bool
 
-// Handle calls the underlying func
+// Handle calls the underlying func.
 func (h HandlerFunc) Handle(e Encoding) bool {
 	return h(e)
 }
 
-// InvalidEncoding writes the 406 header
+// InvalidEncoding writes the 406 header.
 func InvalidEncoding(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNotAcceptable)
 }
@@ -80,38 +80,48 @@ func HandleEncoding(r *http.Request, h Handler) bool {
 	accepts := make(encodings, 0, strings.Count(acceptHeader, acceptSplit)+1)
 	allowIdentity := true
 	hasIdentity := false
+
 Loop:
 	for _, accept := range strings.Split(acceptHeader, acceptSplit) {
 		parts := strings.Split(strings.TrimSpace(accept), partSplit)
+
 		name := strings.TrimSpace(parts[0])
 		if name == "" {
 			continue
 		}
+
 		var (
 			qVal float64 = 1
 			err  error
 		)
+
 		for _, part := range parts[1:] {
 			if strings.HasPrefix(strings.TrimSpace(part), weightPrefix) {
 				qVal, err = strconv.ParseFloat(part[len(weightPrefix):], 32)
 				if err != nil || qVal < 0 || qVal >= 2 {
 					continue Loop
 				}
+
 				break
 			}
 		}
-		name = strings.ToLower(name)
+
 		weight := uint16(qVal * 1000)
+
+		name = strings.ToLower(name)
 		if name == identityEncoding {
 			allowIdentity = weight != 0
 			hasIdentity = true
 		}
+
 		accepts = append(accepts, encoding{
 			encoding: Encoding(name),
 			weight:   weight,
 		})
 	}
+
 	sort.Stable(accepts)
+
 	for _, accept := range accepts {
 		switch accept.encoding {
 		case identityEncoding:
@@ -120,6 +130,7 @@ Loop:
 					return true
 				}
 			}
+
 			allowIdentity = false
 		case anyEncoding:
 			if !hasIdentity {
@@ -128,6 +139,7 @@ Loop:
 						return true
 					}
 				}
+
 				allowIdentity = false
 			}
 		default:
@@ -136,11 +148,13 @@ Loop:
 			}
 		}
 	}
+
 	if allowIdentity {
 		if h.Handle("") {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -148,7 +162,7 @@ Loop:
 // attempts to establish an encoding will simply used the default, plain text,
 // encoding.
 //
-// Useful when you don't want a handler down the chain to also handle encoding
+// Useful when you don't want a handler down the chain to also handle encoding.
 func ClearEncoding(r *http.Request) {
 	r.Header.Del(acceptEncoding)
 }
