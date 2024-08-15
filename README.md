@@ -15,7 +15,7 @@ func ClearEncoding(r *http.Request)
 ClearEncoding removes the Accept-Encoding header so that any further attempts to
 establish an encoding will simply used the default, plain text, encoding.
 
-Useful when you don't want a handler down the chain to also handle encoding
+Useful when you don't want a handler down the chain to also handle encoding.
 
 #### func  HandleEncoding
 
@@ -38,7 +38,7 @@ independent identity encoding specified; otherwise, it is ignored.
 ```go
 func InvalidEncoding(w http.ResponseWriter)
 ```
-InvalidEncoding writes the 406 header
+InvalidEncoding writes the 406 header.
 
 #### type Encoding
 
@@ -62,7 +62,7 @@ Handler provides an interface to handle an encoding.
 The encoding string (e.g. gzip, br, deflate) is passed to the handler, which is
 expected to return true if no more encodings are required and false otherwise.
 
-The empty string "" is used to signify the identity encoding, or plain text
+The empty string "" is used to signify the identity encoding, or plain text.
 
 #### type HandlerFunc
 
@@ -70,11 +70,11 @@ The empty string "" is used to signify the identity encoding, or plain text
 type HandlerFunc func(Encoding) bool
 ```
 
-HandlerFunc wraps a func to make it satisfy the Handler interface
+HandlerFunc wraps a func to make it satisfy the Handler interface.
 
 #### func (HandlerFunc) Handle
 
 ```go
 func (h HandlerFunc) Handle(e Encoding) bool
 ```
-Handle calls the underlying func
+Handle calls the underlying func.
