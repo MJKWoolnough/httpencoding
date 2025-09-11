@@ -68,7 +68,7 @@ func InvalidEncoding(w http.ResponseWriter) {
 // HandleEncoding will process the Accept-Encoding header and calls the given
 // handler for each encoding until the handler returns true.
 //
-// This function returns true when the Handler returns true, false otherwise
+// This function returns true when the Handler returns true, false otherwise.
 //
 // For the identity (plain text) encoding the encoding string will be the
 // empty string.
@@ -149,13 +149,7 @@ Loop:
 		}
 	}
 
-	if allowIdentity {
-		if h.Handle("") {
-			return true
-		}
-	}
-
-	return false
+	return allowIdentity && h.Handle("")
 }
 
 // ClearEncoding removes the Accept-Encoding header so that any further
