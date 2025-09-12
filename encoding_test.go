@@ -19,16 +19,16 @@ func TestOrder(t *testing.T) {
 		AcceptEncoding string
 		Encodings      testEncodings
 	}{
-		{"", testEncodings{"*;", ""}},
+		{"", testEncodings{"*", ""}},
 		{"gzip", testEncodings{"gzip", ""}},
 		{"gzip, deflate, br", testEncodings{"gzip", "deflate", "br", ""}},
 		{"gzip, deflate;q=0.5, br;q=0.9", testEncodings{"gzip", "br", "deflate", ""}},
 		{"identity, gzip, deflate;q=0.5, br;q=0.9", testEncodings{"", "gzip", "br", "deflate"}},
 		{"gzip, br, identity;q=0", testEncodings{"gzip", "br"}},
-		{"gzip, br, identity;q=0, *", testEncodings{"gzip", "br", "*;;"}},
-		{"gzip, *, br", testEncodings{"gzip", "*;", "br", ""}},
-		{"gzip, *, br;q=0, bzip;q=0", testEncodings{"gzip", "*;br;bzip;", ""}},
-		{"gzip, *, br;q=0, identity;q=0, bzip;q=0", testEncodings{"gzip", "*;br;;bzip;"}},
+		{"gzip, br, identity;q=0, *", testEncodings{"gzip", "br", "*;"}},
+		{"gzip, *, br", testEncodings{"gzip", "*", "br", ""}},
+		{"gzip, *, br;q=0, bzip;q=0", testEncodings{"gzip", "*;br;bzip", ""}},
+		{"gzip, *, br;q=0, identity;q=0, bzip;q=0", testEncodings{"gzip", "*;br;;bzip"}},
 	} {
 		te := make(testEncodings, 0, len(test.Encodings))
 

@@ -99,7 +99,7 @@ func parseAccepts(acceptHeader string) []encoding {
 
 	var nots strings.Builder
 
-	nots.WriteString("*;")
+	nots.WriteString("*")
 
 	for accept := range strings.SplitSeq(acceptHeader, acceptSplit) {
 		name, q := splitEncodingQ(strings.TrimSpace(accept))
@@ -120,8 +120,8 @@ func parseAccepts(acceptHeader string) []encoding {
 		}
 
 		if weight == 0 {
-			nots.WriteString(name)
 			nots.WriteByte(';')
+			nots.WriteString(name)
 		} else {
 			if name == anyEncoding {
 				if anyPos != -1 {
