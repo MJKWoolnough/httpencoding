@@ -34,7 +34,7 @@ func (e encodings) Swap(i, j int) {
 
 type encoding struct {
 	encoding Encoding
-	weight   uint16
+	weight   int16
 }
 
 // Encoding represents an encoding string as used by the client. Examples are
@@ -82,6 +82,16 @@ func HandleEncoding(r *http.Request, h Handler) bool {
 		acceptHeader = anyEncoding
 	}
 
+	for _, accept := range parseAccepts(acceptHeader) {
+		if h.Handle(accept.encoding) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func parseAccepts(acceptHeader string) []encoding {
 	accepts := make(encodings, 0, strings.Count(acceptHeader, acceptSplit)+2)
 	hasIdentity := false
 	hasNoAny := false
@@ -91,40 +101,21 @@ func HandleEncoding(r *http.Request, h Handler) bool {
 
 	nots.WriteString("*;")
 
-Loop:
 	for _, accept := range strings.Split(acceptHeader, acceptSplit) {
-		hasQ := true
-		split := strings.IndexByte(accept, partSplit)
-		if split == -1 {
-			split = len(accept)
-			hasQ = false
-		}
-
-		name := strings.ToLower(strings.TrimSpace(accept[:split]))
+		name, q := splitEncodingQ(strings.TrimSpace(accept))
 		if name == "" {
 			continue
 		}
 
-		var (
-			qVal float64 = 1
-			err  error
-		)
-
-		if hasQ {
-			if part := strings.TrimSpace(accept[split+1:]); strings.HasPrefix(part, weightPrefix) {
-				qVal, err = strconv.ParseFloat(part[len(weightPrefix):], 32)
-				if err != nil || qVal < 0 || qVal > 1 {
-					continue Loop
-				}
-			}
+		weight := parseQ(q)
+		if weight == -1 {
+			continue
 		}
-
-		weight := uint16(qVal * 1000)
 
 		if name == identityEncoding {
 			hasIdentity = true
 			name = ""
-		} else if name == anyEncoding && qVal == 0 {
+		} else if name == anyEncoding && weight == 0 {
 			hasNoAny = true
 		}
 
@@ -160,13 +151,39 @@ Loop:
 		})
 	}
 
-	for _, accept := range accepts {
-		if h.Handle(accept.encoding) {
-			return true
+	return accepts
+}
+
+func splitEncodingQ(accept string) (string, string) {
+	hasQ := true
+
+	split := strings.IndexByte(accept, partSplit)
+	if split == -1 {
+		split = len(accept)
+		hasQ = false
+	}
+
+	if !hasQ {
+		return accept, ""
+	}
+
+	return accept[:split], accept[split+1:]
+}
+
+func parseQ(q string) int16 {
+	var (
+		qVal float64 = 1
+		err  error
+	)
+
+	if strings.HasPrefix(q, weightPrefix) {
+		qVal, err = strconv.ParseFloat(q[len(weightPrefix):], 32)
+		if err != nil || qVal < 0 || qVal > 1 {
+			return -1
 		}
 	}
 
-	return false
+	return int16(qVal * 1000)
 }
 
 // ClearEncoding removes the Accept-Encoding header so that any further
