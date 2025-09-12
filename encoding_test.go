@@ -43,3 +43,22 @@ func TestOrder(t *testing.T) {
 		}
 	}
 }
+
+func TestIsDisallowedInWildcard(t *testing.T) {
+	for n, test := range []struct {
+		Wildcard, Enc string
+		Match         bool
+	}{
+		{"*", "gzip", false},
+		{"*;gzip", "gzip", true},
+		{"*;bzip;gzip", "gzip", true},
+		{"*;bzip", "gzip", false},
+		{"*;bzip", "", false},
+		{"*;bzip;", "", true},
+		{"*;;bzip", "", true},
+	} {
+		if IsDisallowedInWildcard(test.Wildcard, test.Enc) != test.Match {
+			t.Errorf("test %d: expecting %v, got %v", n+1, test.Match, !test.Match)
+		}
+	}
+}
