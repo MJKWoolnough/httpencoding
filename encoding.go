@@ -101,7 +101,7 @@ func parseAccepts(acceptHeader string) []encoding {
 
 	nots.WriteString("*;")
 
-	for _, accept := range strings.Split(acceptHeader, acceptSplit) {
+	for accept := range strings.SplitSeq(acceptHeader, acceptSplit) {
 		name, q := splitEncodingQ(strings.TrimSpace(accept))
 		if name == "" {
 			continue
