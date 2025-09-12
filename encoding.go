@@ -14,7 +14,7 @@ const (
 	anyEncoding      = "*"
 	identityEncoding = "identity"
 	acceptSplit      = ","
-	partSplit        = ";"
+	partSplit        = ';'
 	weightPrefix     = "q="
 )
 
@@ -76,16 +76,31 @@ func InvalidEncoding(w http.ResponseWriter) {
 // The wildcard encoding (*) is currently treated as identity when there is no
 // independent identity encoding specified; otherwise, it is ignored.
 func HandleEncoding(r *http.Request, h Handler) bool {
-	acceptHeader := r.Header.Get(acceptEncoding)
-	accepts := make(encodings, 0, strings.Count(acceptHeader, acceptSplit)+1)
-	allowIdentity := true
+	acceptHeader := strings.TrimSpace(r.Header.Get(acceptEncoding))
+
+	if len(acceptHeader) == 0 {
+		acceptHeader = anyEncoding
+	}
+
+	accepts := make(encodings, 0, strings.Count(acceptHeader, acceptSplit)+2)
 	hasIdentity := false
+	hasNoAny := false
+	anyPos := -1
+
+	var nots strings.Builder
+
+	nots.WriteString("*;")
 
 Loop:
 	for _, accept := range strings.Split(acceptHeader, acceptSplit) {
-		parts := strings.Split(strings.TrimSpace(accept), partSplit)
+		hasQ := true
+		split := strings.IndexByte(accept, partSplit)
+		if split == -1 {
+			split = len(accept)
+			hasQ = false
+		}
 
-		name := strings.TrimSpace(parts[0])
+		name := strings.ToLower(strings.TrimSpace(accept[:split]))
 		if name == "" {
 			continue
 		}
@@ -95,61 +110,63 @@ Loop:
 			err  error
 		)
 
-		for _, part := range parts[1:] {
-			if strings.HasPrefix(strings.TrimSpace(part), weightPrefix) {
+		if hasQ {
+			if part := strings.TrimSpace(accept[split+1:]); strings.HasPrefix(part, weightPrefix) {
 				qVal, err = strconv.ParseFloat(part[len(weightPrefix):], 32)
-				if err != nil || qVal < 0 || qVal >= 2 {
+				if err != nil || qVal < 0 || qVal > 1 {
 					continue Loop
 				}
-
-				break
 			}
 		}
 
 		weight := uint16(qVal * 1000)
 
-		name = strings.ToLower(name)
 		if name == identityEncoding {
-			allowIdentity = weight != 0
 			hasIdentity = true
+			name = ""
+		} else if name == anyEncoding && qVal == 0 {
+			hasNoAny = true
 		}
 
-		accepts = append(accepts, encoding{
-			encoding: Encoding(name),
-			weight:   weight,
-		})
+		if weight == 0 {
+			nots.WriteString(name)
+			nots.WriteByte(';')
+		} else {
+			if name == anyEncoding {
+				if anyPos != -1 {
+					continue
+				}
+
+				anyPos = len(accepts)
+			}
+
+			accepts = append(accepts, encoding{
+				encoding: Encoding(name),
+				weight:   weight,
+			})
+		}
+	}
+
+	if anyPos != -1 {
+		accepts[anyPos].encoding = Encoding(nots.String())
 	}
 
 	sort.Stable(accepts)
 
+	if !hasIdentity && !hasNoAny {
+		accepts = append(accepts, encoding{
+			encoding: "",
+			weight:   1,
+		})
+	}
+
 	for _, accept := range accepts {
-		switch accept.encoding {
-		case identityEncoding:
-			if accept.weight != 0 {
-				if h.Handle("") {
-					return true
-				}
-			}
-
-			allowIdentity = false
-		case anyEncoding:
-			if !hasIdentity {
-				if accept.weight != 0 {
-					if h.Handle("") {
-						return true
-					}
-				}
-
-				allowIdentity = false
-			}
-		default:
-			if h.Handle(accept.encoding) {
-				return true
-			}
+		if h.Handle(accept.encoding) {
+			return true
 		}
 	}
 
-	return allowIdentity && h.Handle("")
+	return false
 }
 
 // ClearEncoding removes the Accept-Encoding header so that any further
