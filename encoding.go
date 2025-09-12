@@ -194,3 +194,17 @@ func parseQ(q string) int16 {
 func ClearEncoding(r *http.Request) {
 	r.Header.Del(acceptEncoding)
 }
+
+func IsDisallowedInWildcard(accept, encoding string) bool {
+	if !strings.HasPrefix(accept, "*;") {
+		return false
+	}
+
+	for enc := range strings.SplitSeq(accept[2:], ";") {
+		if enc == encoding {
+			return true
+		}
+	}
+
+	return false
+}
