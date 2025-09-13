@@ -43,7 +43,7 @@ InvalidEncoding writes the 406 header.
 #### func  IsDisallowedInWildcard
 
 ```go
-func IsDisallowedInWildcard(accept, encoding string) bool
+func IsDisallowedInWildcard(accept, encoding Encoding) bool
 ```
 IsDisallowedInWildcard will return true if the given encoding is disallowed in
 the given accept string.
@@ -51,7 +51,7 @@ the given accept string.
 #### func  IsWildcard
 
 ```go
-func IsWildcard(accept string) bool
+func IsWildcard(accept Encoding) bool
 ```
 IsWildcard returns true when the given accept string is a wildcard match.
 

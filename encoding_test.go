@@ -51,7 +51,7 @@ func TestOrder(t *testing.T) {
 
 func TestIsDisallowedInWildcard(t *testing.T) {
 	for n, test := range []struct {
-		Wildcard, Enc string
+		Wildcard, Enc Encoding
 		Match         bool
 	}{
 		{"*", "gzip", false},

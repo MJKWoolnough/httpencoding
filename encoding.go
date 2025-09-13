@@ -197,13 +197,13 @@ func ClearEncoding(r *http.Request) {
 
 // IsDisallowedInWildcard will return true if the given encoding is disallowed
 // in the given accept string.
-func IsDisallowedInWildcard(accept, encoding string) bool {
-	if !strings.HasPrefix(accept, "*;") {
+func IsDisallowedInWildcard(accept, encoding Encoding) bool {
+	if !strings.HasPrefix(string(accept), "*;") {
 		return false
 	}
 
-	for enc := range strings.SplitSeq(accept[2:], ";") {
-		if enc == encoding {
+	for enc := range strings.SplitSeq(string(accept[2:]), ";") {
+		if enc == string(encoding) {
 			return true
 		}
 	}
@@ -212,6 +212,6 @@ func IsDisallowedInWildcard(accept, encoding string) bool {
 }
 
 // IsWildcard returns true when the given accept string is a wildcard match.
-func IsWildcard(accept string) bool {
-	return accept == "*" || strings.HasPrefix(accept, "*;")
+func IsWildcard(accept Encoding) bool {
+	return accept == "*" || strings.HasPrefix(string(accept), "*;")
 }
