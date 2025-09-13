@@ -29,6 +29,11 @@ func TestOrder(t *testing.T) {
 		{"gzip, *, br", testEncodings{"gzip", "*", "br", ""}},
 		{"gzip, *, br;q=0, bzip;q=0", testEncodings{"gzip", "*;br;bzip", ""}},
 		{"gzip, *, br;q=0, identity;q=0, bzip;q=0", testEncodings{"gzip", "*;br;;bzip"}},
+		{"gzip;", testEncodings{"gzip", ""}},
+		{"gzip, , bzip", testEncodings{"gzip", "bzip", ""}},
+		{"*;q=0", testEncodings{}},
+		{"*, *", testEncodings{"*", ""}},
+		{"gzip;q=1, bzip;q=2", testEncodings{"gzip", ""}},
 	} {
 		te := make(testEncodings, 0, len(test.Encodings))
 
