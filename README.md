@@ -25,13 +25,13 @@ func HandleEncoding(r *http.Request, h Handler) bool
 HandleEncoding will process the Accept-Encoding header and calls the given
 handler for each encoding until the handler returns true.
 
-This function returns true when the Handler returns true, false otherwise
+This function returns true when the Handler returns true, false otherwise.
 
 For the identity (plain text) encoding the encoding string will be the empty
 string.
 
-The wildcard encoding (*) is currently treated as identity when there is no
-independent identity encoding specified; otherwise, it is ignored.
+The wildcard encoding (*) will, after the '*', contain a semi-colon seperated
+list of all disallowed encodings (q=0).
 
 #### func  InvalidEncoding
 
@@ -39,6 +39,21 @@ independent identity encoding specified; otherwise, it is ignored.
 func InvalidEncoding(w http.ResponseWriter)
 ```
 InvalidEncoding writes the 406 header.
+
+#### func  IsDisallowedInWildcard
+
+```go
+func IsDisallowedInWildcard(accept, encoding string) bool
+```
+IsDisallowedInWildcard will return true if the given encoding is disallowed in
+the given accept string.
+
+#### func  IsWildcard
+
+```go
+func IsWildcard(accept string) bool
+```
+IsWildcard returns true when the given accept string is a wildcard match.
 
 #### type Encoding
 
