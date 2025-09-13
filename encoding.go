@@ -208,3 +208,7 @@ func IsDisallowedInWildcard(accept, encoding string) bool {
 
 	return false
 }
+
+func IsWildcard(accept string) bool {
+	return accept == "*" || strings.HasPrefix(accept, "*;")
+}
