@@ -4,6 +4,7 @@ package httpencoding // import "vimagination.zapto.org/httpencoding"
 
 import (
 	"net/http"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -83,7 +84,7 @@ func HandleEncoding(r *http.Request, h Handler) bool {
 	}
 
 	for _, accept := range parseAccepts(acceptHeader) {
-		if h.Handle(accept.encoding) {
+		if accept.weight != 0 && h.Handle(accept.encoding) {
 			return true
 		}
 	}
@@ -119,23 +120,27 @@ func parseAccepts(acceptHeader string) []encoding {
 			hasNoAny = true
 		}
 
+		if slices.ContainsFunc(accepts, func(e encoding) bool { return e.encoding == Encoding(name) }) {
+			continue
+		}
+
 		if weight == 0 {
 			nots.WriteByte(';')
 			nots.WriteString(name)
-		} else {
-			if name == anyEncoding {
-				if anyPos != -1 {
-					continue
-				}
+		}
 
-				anyPos = len(accepts)
+		if name == anyEncoding {
+			if anyPos != -1 {
+				continue
 			}
 
-			accepts = append(accepts, encoding{
-				encoding: Encoding(name),
-				weight:   weight,
-			})
+			anyPos = len(accepts)
 		}
+
+		accepts = append(accepts, encoding{
+			encoding: Encoding(name),
+			weight:   weight,
+		})
 	}
 
 	if anyPos != -1 {
