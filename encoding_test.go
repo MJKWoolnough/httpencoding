@@ -30,6 +30,7 @@ func TestOrder(t *testing.T) {
 		{"gzip, *, br;q=0, bzip;q=0", testEncodings{"gzip", "*;br;bzip", ""}},
 		{"gzip, *, br;q=0, identity;q=0, bzip;q=0", testEncodings{"gzip", "*;br;;bzip"}},
 		{"gzip;", testEncodings{"gzip", ""}},
+		{"gzip, *, gzip;q=0", testEncodings{"gzip", "*", ""}},
 		{"gzip, , bzip", testEncodings{"gzip", "bzip", ""}},
 		{"*;q=0", testEncodings{}},
 		{"*, *", testEncodings{"*", ""}},
