@@ -6,8 +6,9 @@ import (
 	"net/http"
 	"slices"
 	"sort"
-	"strconv"
 	"strings"
+
+	"vimagination.zapto.org/parser"
 )
 
 const (
@@ -102,15 +103,24 @@ func parseAccepts(acceptHeader string) []encoding {
 
 	nots.WriteString("*")
 
-	for accept := range strings.SplitSeq(acceptHeader, acceptSplit) {
-		name, q := splitEncodingQ(strings.TrimSpace(accept))
-		if name == "" {
+	p := parseAccept(acceptHeader)
+
+	for {
+		coding := p.Next()
+		if coding.Type == parser.TokenDone {
+			break
+		}
+
+		name := coding.Data
+
+		if p.Accept(tokenInvalidWeight) {
 			continue
 		}
 
-		weight := parseQ(q)
-		if weight == -1 {
-			continue
+		weight := int16(1000)
+
+		if p.Peek().Type == tokenWeight {
+			weight = parseQ(p.Next().Data)
 		}
 
 		if name == identityEncoding {
@@ -159,36 +169,24 @@ func parseAccepts(acceptHeader string) []encoding {
 	return accepts
 }
 
-func splitEncodingQ(accept string) (string, string) {
-	hasQ := true
-
-	split := strings.IndexByte(accept, partSplit)
-	if split == -1 {
-		split = len(accept)
-		hasQ = false
-	}
-
-	if !hasQ {
-		return accept, ""
-	}
-
-	return accept[:split], accept[split+1:]
-}
+var multiplies = [...]int16{100, 10, 1}
 
 func parseQ(q string) int16 {
-	var (
-		qVal float64 = 1
-		err  error
-	)
-
-	if strings.HasPrefix(q, weightPrefix) {
-		qVal, err = strconv.ParseFloat(q[len(weightPrefix):], 32)
-		if err != nil || qVal < 0 || qVal > 1 {
-			return -1
-		}
+	if q[0] == '1' {
+		return 1000
 	}
 
-	return int16(qVal * 1000)
+	if len(q) < 2 {
+		return 0
+	}
+
+	var qv int16
+
+	for n, v := range q[2:] {
+		qv += int16(v-'0') * multiplies[n]
+	}
+
+	return qv
 }
 
 // ClearEncoding removes the Accept-Encoding header so that any further
