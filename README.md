@@ -1,95 +1,86 @@
 # httpencoding
+
+[![CI](https://github.com/MJKWoolnough/httpencoding/actions/workflows/go-checks.yml/badge.svg)](https://github.com/MJKWoolnough/httpencoding/actions)
+[![Go Reference](https://pkg.go.dev/badge/vimagination.zapto.org/httpencoding.svg)](https://pkg.go.dev/vimagination.zapto.org/httpencoding)
+[![Go Report Card](https://goreportcard.com/badge/vimagination.zapto.org/httpencoding)](https://goreportcard.com/report/vimagination.zapto.org/httpencoding)
+
 --
     import "vimagination.zapto.org/httpencoding"
 
-Package httpencoding provides a function to deal with the Accept-Encoding
-header.
+Package httpencoding provides a function to deal with the Accept-Encoding header.
+
+## Highlights
+
+ - Simple handling of `Accept-Encoding` HTTP header.
+ - Supports identity, wildcards, and q-values.
 
 ## Usage
 
-#### func  ClearEncoding
-
 ```go
-func ClearEncoding(r *http.Request)
-```
-ClearEncoding removes the Accept-Encoding header so that any further attempts to
-establish an encoding will simply used the default, plain text, encoding.
+package main
 
-Useful when you don't want a handler down the chain to also handle encoding.
+import (
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
 
-#### func  HandleEncoding
+	"vimagination.zapto.org/httpencoding"
+)
 
-```go
-func HandleEncoding(r *http.Request, h Handler) bool
-```
-HandleEncoding will process the Accept-Encoding header and calls the given
-handler for each encoding until the handler returns true.
+func main() {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		if !httpencoding.HandleEncoding(r, httpencoding.HandlerFunc(func(e httpencoding.Encoding) bool {
+			if e == "gzip" || httpencoding.IsWildcard(e) && !httpencoding.IsDisallowedInWildcard(e, "gzip") {
+				io.WriteString(w, "gzip")
+			} else if e == "" || httpencoding.IsWildcard(e) && !httpencoding.IsDisallowedInWildcard(e, "") {
+				io.WriteString(w, "identity")
+			} else {
+				return false
+			}
 
-This function returns true when the Handler returns true, false otherwise.
+			return true
+		})) {
+			io.WriteString(w, "none")
+		}
+	}
 
-For the identity (plain text) encoding the encoding string will be the empty
-string.
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	handler(w, r)
+	fmt.Println(w.Body)
 
-The wildcard encoding (*) will, after the '*', contain a semi-colon seperated
-list of all disallowed encodings (q=0).
+	w = httptest.NewRecorder()
+	r.Header.Set("Accept-encoding", "identity")
+	handler(w, r)
+	fmt.Println(w.Body)
 
-#### func  InvalidEncoding
+	w = httptest.NewRecorder()
+	r.Header.Set("Accept-encoding", "gzip, identity")
+	handler(w, r)
+	fmt.Println(w.Body)
 
-```go
-func InvalidEncoding(w http.ResponseWriter)
-```
-InvalidEncoding writes the 406 header.
+	w = httptest.NewRecorder()
+	r.Header.Set("Accept-encoding", "gzip;q=0.5, identity;q=0.6")
+	handler(w, r)
+	fmt.Println(w.Body)
 
-#### func  IsDisallowedInWildcard
+	w = httptest.NewRecorder()
+	r.Header.Set("Accept-encoding", "identity;q=0")
+	handler(w, r)
+	fmt.Println(w.Body)
 
-```go
-func IsDisallowedInWildcard(accept, encoding Encoding) bool
-```
-IsDisallowedInWildcard will return true if the given encoding is disallowed in
-the given accept string.
-
-#### func  IsWildcard
-
-```go
-func IsWildcard(accept Encoding) bool
-```
-IsWildcard returns true when the given accept string is a wildcard match.
-
-#### type Encoding
-
-```go
-type Encoding string
-```
-
-Encoding represents an encoding string as used by the client. Examples are gzip,
-br and deflate.
-
-#### type Handler
-
-```go
-type Handler interface {
-	Handle(encoding Encoding) bool
+	// Output:
+	// gzip
+	// identity
+	// gzip
+	// identity
+	// none
 }
 ```
 
-Handler provides an interface to handle an encoding.
+## Documentation
 
-The encoding string (e.g. gzip, br, deflate) is passed to the handler, which is
-expected to return true if no more encodings are required and false otherwise.
+Full API docs can be found at:
 
-The empty string "" is used to signify the identity encoding, or plain text.
-
-#### type HandlerFunc
-
-```go
-type HandlerFunc func(Encoding) bool
-```
-
-HandlerFunc wraps a func to make it satisfy the Handler interface.
-
-#### func (HandlerFunc) Handle
-
-```go
-func (h HandlerFunc) Handle(e Encoding) bool
-```
-Handle calls the underlying func.
+https://pkg.go.dev/vimagination.zapto.org/httpencoding
