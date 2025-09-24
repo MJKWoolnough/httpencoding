@@ -75,7 +75,7 @@ func InvalidEncoding(w http.ResponseWriter) {
 // For the identity (plain text) encoding the encoding string will be the
 // empty string.
 //
-// The wildcard encoding (*) will, after the '*', contain a semi-colon seperated
+// The wildcard encoding (*) will, after the '*', contain a semi-colon separated
 // list of all disallowed encodings (q=0).
 func HandleEncoding(r *http.Request, h Handler) bool {
 	acceptHeader := strings.TrimSpace(r.Header.Get(acceptEncoding))
