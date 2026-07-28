@@ -50,6 +50,63 @@ func TestOrder(t *testing.T) {
 	}
 }
 
+func TestOrderWithWeighting(t *testing.T) {
+	for n, test := range []struct {
+		AcceptEncoding string
+		Encodings      testEncodings
+		WeightingFn    func(a, b Encoding) bool
+	}{
+		{"gzip, bzip2, zstd", testEncodings{"gzip", "bzip2", "zstd", ""}, func(a, b Encoding) bool {
+			switch a {
+			case "gzip":
+				return true
+			case "bzip2":
+				return b != "gzip"
+			case "zstd":
+				return b == ""
+			}
+
+			return false
+		}},
+		{"gzip, bzip2, zstd", testEncodings{"zstd", "bzip2", "gzip", ""}, func(a, b Encoding) bool {
+			switch a {
+			case "zstd":
+				return true
+			case "bzip2":
+				return b != "zstd"
+			case "gzip":
+				return b == ""
+			}
+
+			return false
+		}},
+		{"gzip, bzip2;q=0.5, zstd;q=0.5", testEncodings{"gzip", "zstd", "bzip2", ""}, func(a, b Encoding) bool {
+			switch a {
+			case "zstd":
+				return true
+			case "bzip2":
+				return b != "zstd"
+			case "gzip":
+				return b == ""
+			}
+
+			return false
+		}},
+	} {
+		te := make(testEncodings, 0, len(test.Encodings))
+
+		HandleEncodingWithCustomWeights(&http.Request{
+			Header: http.Header{
+				acceptEncoding: []string{test.AcceptEncoding},
+			},
+		}, &te, test.WeightingFn)
+
+		if !reflect.DeepEqual(te, test.Encodings) {
+			t.Errorf("test %d: expecting %v, got %v", n+1, test.Encodings, te)
+		}
+	}
+}
+
 func TestIsDisallowedInWildcard(t *testing.T) {
 	for n, test := range []struct {
 		Wildcard, Enc Encoding
