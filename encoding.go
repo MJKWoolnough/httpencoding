@@ -88,6 +88,11 @@ func HandleEncoding(r *http.Request, h Handler) bool {
 	return HandleEncodingWithCustomWeights(r, h, nil)
 }
 
+// HandleEncodingWithCustomWeights acts like HandleEncoding, but can specify a
+// weighting function to customise Encoding ordering.
+//
+// The weighting function is a Less function, that should return true if the
+// first argument should have higher priority than the second argument.
 func HandleEncodingWithCustomWeights(r *http.Request, h Handler, weightingFn func(a, b Encoding) bool) bool {
 	acceptHeader := strings.TrimSpace(r.Header.Get(acceptEncoding))
 
