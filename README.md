@@ -12,6 +12,7 @@ Package httpencoding provides a function to deal with the Accept-Encoding header
 
  - Simple handling of `Accept-Encoding` HTTP header.
  - Supports identity, wildcards, and q-values.
+ - Can set priority of equally weighted encodings.
 
 ## Usage
 
