@@ -20,18 +20,25 @@ const (
 	weightPrefix     = "q="
 )
 
-type encodings []encoding
-
-func (e encodings) Len() int {
-	return len(e)
+type encodings struct {
+	weightingFn func(a, b Encoding) bool
+	encs        []encoding
 }
 
-func (e encodings) Less(i, j int) bool {
-	return e[j].weight < e[i].weight
+func (e *encodings) Len() int {
+	return len(e.encs)
 }
 
-func (e encodings) Swap(i, j int) {
-	e[i], e[j] = e[j], e[i]
+func (e *encodings) Less(i, j int) bool {
+	if e.weightingFn != nil && e.encs[j].weight == e.encs[i].weight {
+		return e.weightingFn(e.encs[i].encoding, e.encs[j].encoding)
+	}
+
+	return e.encs[j].weight < e.encs[i].weight
+}
+
+func (e *encodings) Swap(i, j int) {
+	e.encs[i], e.encs[j] = e.encs[j], e.encs[i]
 }
 
 type encoding struct {
@@ -78,13 +85,17 @@ func InvalidEncoding(w http.ResponseWriter) {
 // The wildcard encoding (*) will, after the '*', contain a semi-colon separated
 // list of all disallowed encodings (q=0).
 func HandleEncoding(r *http.Request, h Handler) bool {
+	return HandleEncodingWithCustomWeights(r, h, nil)
+}
+
+func HandleEncodingWithCustomWeights(r *http.Request, h Handler, weightingFn func(a, b Encoding) bool) bool {
 	acceptHeader := strings.TrimSpace(r.Header.Get(acceptEncoding))
 
 	if len(acceptHeader) == 0 {
 		acceptHeader = anyEncoding
 	}
 
-	for _, accept := range parseAccepts(acceptHeader) {
+	for _, accept := range parseAccepts(acceptHeader, weightingFn) {
 		if accept.weight != 0 && h.Handle(accept.encoding) {
 			return true
 		}
@@ -93,8 +104,11 @@ func HandleEncoding(r *http.Request, h Handler) bool {
 	return false
 }
 
-func parseAccepts(acceptHeader string) []encoding {
-	accepts := make(encodings, 0, strings.Count(acceptHeader, acceptSplit)+2)
+func parseAccepts(acceptHeader string, weightingFn func(a, b Encoding) bool) []encoding {
+	accepts := encodings{
+		weightingFn: weightingFn,
+		encs:        make([]encoding, 0, strings.Count(acceptHeader, acceptSplit)+2),
+	}
 	hasIdentity := false
 	hasNoAny := false
 	anyPos := -1
@@ -130,7 +144,7 @@ func parseAccepts(acceptHeader string) []encoding {
 			hasNoAny = true
 		}
 
-		if slices.ContainsFunc(accepts, func(e encoding) bool { return e.encoding == Encoding(name) }) {
+		if slices.ContainsFunc(accepts.encs, func(e encoding) bool { return e.encoding == Encoding(name) }) {
 			continue
 		}
 
@@ -144,29 +158,29 @@ func parseAccepts(acceptHeader string) []encoding {
 				continue
 			}
 
-			anyPos = len(accepts)
+			anyPos = len(accepts.encs)
 		}
 
-		accepts = append(accepts, encoding{
+		accepts.encs = append(accepts.encs, encoding{
 			encoding: Encoding(name),
 			weight:   weight,
 		})
 	}
 
 	if anyPos != -1 {
-		accepts[anyPos].encoding = Encoding(nots.String())
+		accepts.encs[anyPos].encoding = Encoding(nots.String())
 	}
 
-	sort.Stable(accepts)
+	sort.Stable(&accepts)
 
 	if !hasIdentity && !hasNoAny {
-		accepts = append(accepts, encoding{
+		accepts.encs = append(accepts.encs, encoding{
 			encoding: "",
 			weight:   1,
 		})
 	}
 
-	return accepts
+	return accepts.encs
 }
 
 var multiplies = [...]int16{100, 10, 1}
