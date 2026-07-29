@@ -107,6 +107,68 @@ func TestOrderWithWeighting(t *testing.T) {
 	}
 }
 
+func TestNegotiateEncoding(t *testing.T) {
+	for n, test := range []struct {
+		AcceptEncoding string
+		Encodings      []Encoding
+		Accept         Encoding
+		Found          bool
+	}{
+		{
+			"",
+			[]Encoding{"gzip", "br", ""},
+			"gzip",
+			true,
+		},
+		{
+			"identity",
+			[]Encoding{"gzip", "br", ""},
+			"",
+			true,
+		},
+		{
+			"zstd, identity;q=0",
+			[]Encoding{"gzip", "br", ""},
+			"",
+			false,
+		},
+		{
+			"zstd",
+			[]Encoding{"gzip", "br"},
+			"",
+			false,
+		},
+		{
+			"br, gzip",
+			[]Encoding{"gzip", "br", ""},
+			"gzip",
+			true,
+		},
+		{
+			"br, gzip",
+			[]Encoding{"br", "gzip", ""},
+			"br",
+			true,
+		},
+		{
+			"br;q=0.5, gzip, flate;q=0.5",
+			[]Encoding{"flate", "br"},
+			"flate",
+			true,
+		},
+	} {
+		if accept, ok := Negotiate(&http.Request{
+			Header: http.Header{
+				acceptEncoding: []string{test.AcceptEncoding},
+			},
+		}, test.Encodings...); ok != test.Found {
+			t.Errorf("test %d: expected found to equal %v, got %v", n+1, test.Found, ok)
+		} else if accept != test.Accept {
+			t.Errorf("test %d: expected encoding %s, got %s", n+1, test.Accept, accept)
+		}
+	}
+}
+
 func TestIsDisallowedInWildcard(t *testing.T) {
 	for n, test := range []struct {
 		Wildcard, Enc Encoding
