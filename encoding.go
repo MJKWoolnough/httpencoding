@@ -109,6 +109,11 @@ func HandleEncodingWithCustomWeights(r *http.Request, h Handler, weightingFn fun
 	return false
 }
 
+// Negotiate determines the best encoding to use based on the Accept-Encoding
+// header provided by the client and the ordered list of encodings given.
+//
+// Returns the negotiated encoding and a bool to specify whether a valid
+// encoding was found.
 func Negotiate(r *http.Request, encodings ...Encoding) (Encoding, bool) {
 	var accepted Encoding
 
