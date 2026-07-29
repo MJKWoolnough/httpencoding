@@ -109,6 +109,37 @@ func HandleEncodingWithCustomWeights(r *http.Request, h Handler, weightingFn fun
 	return false
 }
 
+func Negotiate(r *http.Request, encodings ...Encoding) (Encoding, bool) {
+	var accepted Encoding
+
+	if !HandleEncodingWithCustomWeights(r, HandlerFunc(func(enc Encoding) bool {
+		if IsWildcard(enc) {
+			for _, e := range encodings {
+				if !IsDisallowedInWildcard(enc, e) {
+					accepted = e
+
+					return true
+				}
+			}
+		} else if slices.Contains(encodings, enc) {
+			accepted = enc
+
+			return true
+		}
+
+		return false
+	}), func(a, b Encoding) bool {
+		ai := slices.Index(encodings, a)
+		bi := slices.Index(encodings, b)
+
+		return bi == -1 || ai > -1 && ai < bi
+	}) {
+		return "", false
+	}
+
+	return accepted, true
+}
+
 func parseAccepts(acceptHeader string, weightingFn func(a, b Encoding) bool) []encoding {
 	accepts := encodings{
 		weightingFn: weightingFn,
