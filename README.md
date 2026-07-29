@@ -31,19 +31,14 @@ import (
 
 func main() {
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		if !httpencoding.HandleEncoding(r, httpencoding.HandlerFunc(func(e httpencoding.Encoding) bool {
-			if e == "gzip" || httpencoding.IsWildcard(e) && !httpencoding.IsDisallowedInWildcard(e, "gzip") {
-				io.WriteString(w, "gzip")
-			} else if e == "" || httpencoding.IsWildcard(e) && !httpencoding.IsDisallowedInWildcard(e, "") {
-				io.WriteString(w, "identity")
-			} else {
-				return false
-			}
-
-			return true
-		})) {
-			io.WriteString(w, "none")
+		enc, ok := httpencoding.Negotiate(r, "gzip", "br", "")
+		if !ok {
+			enc = "none"
+		} else if enc == "" {
+			enc = "identity"
 		}
+
+		io.WriteString(w, string(enc))
 	}
 
 	w := httptest.NewRecorder()
